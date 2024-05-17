@@ -1,10 +1,10 @@
 import { environment } from "src/environments/environment";
 import * as Parse from 'parse';
-import { EntityFile, EntityObject, EntityRelation } from "../models/DataEntities/entityObjects.model";
 import { User } from "./users.service";
 import * as EventEmitter from "events";
-import { IEntity } from "../models/DataEntities/entity.interface";
 import { Classnames, EntityObjectDefinition } from "../common/classnames.model";
+import { EntityFile, EntityObject, EntityRelation } from "../models/entityObjects.model";
+import { IEntity } from "../models/entity.interface";
 
 
 export interface DataInterface<T extends EntityObject> {
@@ -706,7 +706,7 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
     mappedUser.username = user.getUsername();
     mappedUser.role = user.get("role");
     mappedUser.entity = user;
-    mappedUser.id = user.id;
+    (mappedUser as any).id = user.id;
     return mappedUser;
   }
 

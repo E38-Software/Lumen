@@ -1,7 +1,8 @@
 import { EntityObject } from "../models/entityObjects.model";
 import { ParseDataService } from "./data.service";
-import { ParseUserService, User } from "./users.service";
 import { Injectable } from "@angular/core";
+import * as Parse from 'parse';
+import { User } from "./users.service";
 
 export class Role extends EntityObject {
     name: string;
@@ -34,21 +35,8 @@ export class ParseRoleManger extends ParseDataService<Role> implements RoleManag
     findByName(roleName: string): Role {
         throw new Error("Method not implemented.");
     }
-    async createRole(roleName: string, users?: User[], childrenRoles?: Role[], parentRole?: Role | undefined, relatedCustomer?: Customer): Promise<Role> {
-        let newRole = new Role();
-        if (childrenRoles)
-            newRole.roles = childrenRoles;
-        if (users)
-            newRole.users = users;
-        newRole.name = roleName;
-        newRole = await this.save(newRole);
-        if (parentRole) {
-            let role = parentRole.entity as Parse.Role;
-            role.getRoles().add(role);
-            parentRole.entity = await role.save();
-        }
-        newRole.relatedCustomer = relatedCustomer;
-        return newRole;
+    async createRole(roleName: string, users?: User[], childrenRoles?: Role[], parentRole?: Role | undefined): Promise<Role> {
+        throw new Error("Method not implemented.");
     }
     changeUserRole(newRole: Role, user: User): User {
         throw new Error("Method not implemented.");

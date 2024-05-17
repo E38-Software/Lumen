@@ -1,11 +1,10 @@
 import { Injectable } from "@angular/core";
 import * as Parse from 'parse';
-import { Classnames } from "../common/classnames.model";
-import { ParseDataService } from "./data.service";
 import { ParseRoleManger } from "./roles.service";
 import { ParseFileService } from "./files.service";
 import { IEntity } from "../models/entity.interface";
 import { EntityFile } from "../models/entityObjects.model";
+import { environment } from "src/environments/environment";
 
 export class User extends Parse.User {
     username?: string;
@@ -27,7 +26,7 @@ export interface UserService {
 })
 export class ParseUserService implements UserService {
     currentSession: Parse.Session;
-    constructor(protected _authService: AuthService, protected _roleService: ParseRoleManger, protected _fileService: ParseFileService) {
+    constructor(protected _roleService: ParseRoleManger, protected _fileService: ParseFileService) {
         Parse.initialize(`${environment.APPLICATION_ID}`, `${environment.JAVASCRIPT_KEY}`);  // use your appID & your js key
         (Parse as any).serverURL = `${environment.parseUrl}`; // use your server url
         (Parse as any).liveQueryServerURL = `${environment.LIVE_QUERY_SERVER}`;
@@ -39,7 +38,7 @@ export class ParseUserService implements UserService {
         mappedUser.username = user.getUsername();
         mappedUser.role = user.get("role");
         mappedUser.entity = user;
-        mappedUser.id = user.id;
+        (mappedUser as any).id = user.id;
         mappedUser.profilePicture = user.get("profilePicture");
         return mappedUser;
     }
@@ -84,8 +83,6 @@ export class ParseUserService implements UserService {
                         case Parse.Error.INVALID_SESSION_TOKEN:
                             console.log("Invalid Session, need to log in again!")
                             Parse.User.logOut();
-                            this._authService.logout();
-                            window.location.reload();
                             return undefined;
                     }
                 }
@@ -170,7 +167,7 @@ export class ParseUserService implements UserService {
         if (!user) return undefined;
         let file;
         try {
-            file = user.get("profilePicture") as Parse.File;
+            file = (user as any).get("profilePicture") as Parse.File;
         } catch (error) {
             file = undefined;
         }
@@ -182,5 +179,6 @@ export class ParseUserService implements UserService {
         if (file) {
             return file.url();
         }
+        return undefined;
     }
 }
