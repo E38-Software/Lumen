@@ -1,6 +1,6 @@
-import { Classnames } from "../common/classnames.model";
-import { User } from "../services/users.service";
-import { IEntity, IFile } from "./entity.interface";
+import { DataType, DisplayName, IEntity, IFile } from "./entity.interface";
+import { Classnames } from "src/app/common/classnames.model";
+import { User } from "./user.model";
 
 export class EntityObject {
     // create a getter for id
@@ -15,8 +15,12 @@ export class EntityObject {
     // public entityProperties: string[];
     // public entityArrayProperties: string[]
     public updatedBy?: User;
+    @DisplayName("Creato da")
+    @DataType("Object")
     public createdBy?: User;
     public updatedAt?: Date;
+    @DataType("Date")
+    @DisplayName("Data Creazione")
     public createdAt?: Date;
 }
 

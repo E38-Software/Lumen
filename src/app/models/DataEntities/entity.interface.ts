@@ -12,7 +12,7 @@ export interface IFile {
 
 }
 
-export class typeAvailable {
+class typeAvailable {
     string: string;
     number: number;
     boolean: boolean;
@@ -21,6 +21,8 @@ export class typeAvailable {
     EntityRelation: EntityRelation;
     unknown: never;
 }
+
+export type DataTypeAvailable = keyof typeAvailable;
 
 export interface PropertyTypesRegistry {
     [className: string]: Record<string, string>;
@@ -31,7 +33,7 @@ export const propertyDislayNamesRegistry: PropertyTypesRegistry = {};
 const classDisplayNamesRegistry: { [key: string]: string } = {};
 
 
-export function DataType(type: keyof typeAvailable, isArray: boolean = false) {
+export function DataType(type: DataTypeAvailable, isArray: boolean = false) {
     return function (target: any, key: string) {
         const className = target.constructor.name;
 
@@ -45,7 +47,7 @@ export function DataType(type: keyof typeAvailable, isArray: boolean = false) {
     };
 }
 
-export function getDataType<T extends Object>(instance: T, property: keyof T): keyof typeAvailable {
+export function getDataType<T extends Object>(instance: T, property: keyof T): DataTypeAvailable {
     let prototype = Object.getPrototypeOf(instance);
     let className = prototype.constructor.name;
 
@@ -103,7 +105,7 @@ export function getDisplayName<T extends Object>(instance: T, property: keyof T)
         className = prototype ? prototype.constructor.name : null;
     }
     if (!className) {
-        console.warn(`No display name found for property '${property as string}'`);
+        // console.warn(`No display name found for property '${property as string}'`);
         return property as string;
     }
     return propertyDislayNamesRegistry[className][property as string];

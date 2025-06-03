@@ -1,10 +1,11 @@
-import { environment } from "src/environments/environment";
+import { environment } from "../environments/environment.prod";
 import * as Parse from 'parse';
-import { User } from "./users.service";
-import * as EventEmitter from "events";
+import { EntityFile, EntityObject, EntityRelation } from "../models/DataEntities/entityObjects.model";
+import EventEmitter from "events";
+import { IEntity } from "../models/DataEntities/entity.interface";
 import { Classnames, EntityObjectDefinition } from "../common/classnames.model";
-import { EntityFile, EntityObject, EntityRelation } from "../models/entityObjects.model";
-import { IEntity } from "../models/entity.interface";
+import { User } from "../models/DataEntities/user.model";
+
 
 
 export interface DataInterface<T extends EntityObject> {
@@ -86,6 +87,8 @@ export interface DataInterface<T extends EntityObject> {
 
   setACLByActiveUser(entityObject: T): Promise<T>;
   setACLByRole(role: string): Promise<T>;
+
+  getSampleObject(): T;
 }
 
 export type CustomMappingFunction<T extends EntityObject | T[]> = (parseElement: Parse.Object<Parse.Attributes> | Parse.Object<Parse.Attributes>[]) => T | T[];
@@ -95,28 +98,29 @@ export type CustomAttributesMapping<T0 extends EntityObject> = {
 /**
  * Data interface implementation for Parse Server
  */
-export class ParseDataService<T extends EntityObject> implements DataInterface<T> {
+export abstract class ParseDataService<T extends EntityObject> implements DataInterface<T> {
   protected classType: { new(): T };
   protected classname: string;
 
 
   protected initialBufferQuery: Parse.Query | undefined;
+  protected initialIncludes?: string[];
   protected bufferQuery: Parse.Query | undefined;
 
-  protected bufferQuery$: Promise<Parse.Object<Parse.Attributes>[]>;
+  protected bufferQuery$: Promise<Parse.Object<Parse.Attributes>[]> = Promise.resolve([]);;
 
-  protected bufferSuccessMessage: string;
+  protected bufferSuccessMessage?: string;
   protected bufferStarted: boolean = false;
 
-  protected dataBuffer: { [key: string]: T };
-  protected dataBuffer$: Promise<void>;
+  protected dataBuffer: { [key: string]: T } = {};
+  protected dataBuffer$?: Promise<void>;
 
   protected skipInitialQuery: boolean = false;
 
-  protected fullyFetchedBuffer: { [key: string]: boolean };
+  protected fullyFetchedBuffer: { [key: string]: boolean } = {};
 
-  private parseSubscription: Parse.LiveQuerySubscription;
-  protected externalSubscription: EventEmitter;
+  private parseSubscription: Parse.LiveQuerySubscription | undefined = undefined;
+  protected externalSubscription?: EventEmitter;
   protected startLiveQuery?: boolean = true;
   protected lazyLoad?: boolean = true;
   protected lazyLoadDone: boolean = false;
@@ -129,7 +133,6 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
     Parse.initialize(`${environment.APPLICATION_ID}`, `${environment.JAVASCRIPT_KEY}`);  // use your appID & your js key
     (Parse as any).serverURL = `${environment.parseUrl}`; // use your server url
     (Parse as any).liveQueryServerURL = `${environment.LIVE_QUERY_SERVER}`;
-    Parse.enableLocalDatastore();
     this.classType = entityClass.type;
     this.classname = entityClass.classname;
 
@@ -148,6 +151,18 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
   protected async afterSubUpdate(parseObject: Parse.Object): Promise<T | undefined> {
     // console.debug("Aggiornamento", this.classname, parseObject);
     return this.mapParseAttributesToEntityObject(parseObject, 0, this.defaultTreeLimit);
+  }
+
+  protected async loadInitialInclude(): Promise<void> {
+    if (!this.initialIncludes) {
+      return;
+    }
+    if (!this.initialBufferQuery) {
+      this.initialBufferQuery = new Parse.Query(this.classname);
+    }
+    // this.initialBufferQuery.select(this.initialIncludes as string[]);
+    this.initialBufferQuery.include(this.initialIncludes as string[]);
+    this.initialBufferQuery.select(this.initialIncludes as string[]);
   }
 
   protected async startupBuffer(notificationMessage?: string): Promise<void> {
@@ -172,7 +187,7 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
     if (!currentUser) {
       return;
     }
-    const activeSessionToken: string = currentUser.getSessionToken();
+    const activeSessionToken = currentUser.getSessionToken();
 
     if (!this.parseSubscription) {
       this.parseSubscription = await this.bufferQuery!.subscribe(activeSessionToken);
@@ -185,11 +200,15 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
         if (!updated)
           return;
         // this.unindexedBufferData!.push(updated);
-        this.dataBuffer[updated.entity.id] = updated;
+        if (this.dataBuffer) {
+          this.dataBuffer[updated.entity.id] = updated;
+        }
         if (this.initialBufferQuery && this.initialBufferQuery != this.bufferQuery && !this.skipInitialQuery) {
           this.fullyFetchedBuffer[updated.entity.id] = true;
         }
-        this.externalSubscription.emit('create', updated);
+        if (this.externalSubscription) {
+          this.externalSubscription.emit('create', updated);
+        }
       });
       this.parseSubscription.on('update', async (object) => {
         if (this.dataBuffer) {
@@ -200,7 +219,9 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
           if (this.initialBufferQuery && this.initialBufferQuery != this.bufferQuery && !this.skipInitialQuery) {
             this.fullyFetchedBuffer[updated.entity.id] = true;
           }
-          this.externalSubscription.emit('update', updated);
+          if (this.externalSubscription) {
+            this.externalSubscription.emit('updated', updated);
+          }
         }
       });
       this.parseSubscription.on('enter', async (object) => {
@@ -208,18 +229,24 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
         if (!updated)
           return;
         // this.unindexedBufferData!.push(updated);
-        this.dataBuffer[updated.entity.id] = updated;
+        if (this.dataBuffer) {
+          this.dataBuffer[updated.entity.id] = updated;
+        }
         if (this.initialBufferQuery && this.initialBufferQuery != this.bufferQuery && !this.skipInitialQuery) {
           this.fullyFetchedBuffer[updated.entity.id] = true;
         }
-        this.externalSubscription.emit('enter', updated);
+        if (this.externalSubscription) {
+          this.externalSubscription.emit('updated', updated);
+        }
       });
 
       this.parseSubscription.on('leave', (object) => {
         // let index = this.unindexedBufferData!.indexOf(this.unindexedBufferData!.find(x => x.entity.id == object.id)!);
         // this.unindexedBufferData!.splice(index, 1);
-        this.externalSubscription.emit('leave', this.dataBuffer[object.id]);
-        delete this.dataBuffer[object.id];
+        if (this.externalSubscription && this.dataBuffer) {
+          this.externalSubscription.emit('leave', this.dataBuffer[object.id]);
+          delete this.dataBuffer[object.id];
+        }
         if (this.initialBufferQuery && this.initialBufferQuery != this.bufferQuery && !this.skipInitialQuery) {
           delete this.fullyFetchedBuffer[object.id];
         }
@@ -228,8 +255,10 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
       this.parseSubscription.on('delete', (object) => {
         // let index = this.unindexedBufferData!.indexOf(this.unindexedBufferData!.find(x => x.entity.id == object.id)!);
         // this.unindexedBufferData!.splice(index, 1);
-        this.externalSubscription.emit('delete', this.dataBuffer[object.id]);
-        delete this.dataBuffer[object.id];
+        if (this.externalSubscription && this.dataBuffer) {
+          this.externalSubscription.emit('delete', this.dataBuffer[object.id]);
+          delete this.dataBuffer[object.id];
+        }
         if (this.initialBufferQuery && this.initialBufferQuery != this.bufferQuery && !this.skipInitialQuery) {
           delete this.fullyFetchedBuffer[object.id];
         }
@@ -242,6 +271,14 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
         this.dataBuffer$ = new Promise((resolve) => resolve());
         this.dataBuffer = {};
       } else if (!this.lazyLoad) {
+        await this.loadInitialInclude();
+        // among all the inital include values, we should find the one that can be split by '.' that forms the longest chain
+        const longest = this.initialIncludes?.reduce((prev, current) => {
+          return prev.split('.').length > current.split('.').length ? prev : current;
+        }, "");
+        const longestsplit = longest?.split('.')?.length;
+        this.defaultTreeLimit = (longestsplit && longestsplit > 2) ? longestsplit : 2;
+
         if (!this.initialBufferQuery) {
           this.bufferQuery$ = this.bufferQuery.limit(this.queryLimit).find();
         } else {
@@ -252,10 +289,12 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
         this.dataBuffer$ = this.bufferQuery$.then(async (res) => {
           // this.dataBuffer = (await this.afterBufferDownload(res));
           // wait for afterBufferDownload of res and map it to this.dataBuffer using the id as key
-          this.dataBuffer = {};
+
           const unindexedBufferData = await this.afterBufferDownload(res);
           unindexedBufferData.forEach((x) => {
-            this.dataBuffer[x.entity.id] = x;
+            if (this.dataBuffer) {
+              this.dataBuffer[x.entity.id] = x;
+            }
           });
 
           if (!notificationMessage)
@@ -280,10 +319,14 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
           const object = await this.afterSubUpdate(res);
           if (!object)
             return;
-          this.dataBuffer[object.entity.id] = object;
+          if (this.dataBuffer) {
+            this.dataBuffer[object.entity.id] = object;
+          }
           // wait 1 ms
           await new Promise((resolve) => setTimeout(resolve, 10));
-          this.externalSubscription.emit('enter', object);
+          if (this.externalSubscription) {
+            this.externalSubscription.emit('enter', object);
+          }
         }).then(() => {
           console.log("Lazy load for", this.classname, "completed");
           this.lazyLoadDone = true;
@@ -352,6 +395,7 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
       if (updatedObject) {
         updatedObject = this.updateAttributeOnSubscriptionUpdate(attributeToSubscribe, updatedObject, object);
         this.dataBuffer[updatedObject.entity.id] = updatedObject;
+
         if (this.externalSubscription)
           this.externalSubscription.emit('update', updatedObject);
       }
@@ -362,6 +406,7 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
       if (updatedObject) {
         updatedObject = this.updateAttributeOnSubscriptionUpdate(attributeToSubscribe, updatedObject, object);
         this.dataBuffer[updatedObject.entity.id] = updatedObject;
+
         if (this.externalSubscription)
           this.externalSubscription.emit('update', updatedObject);
       }
@@ -372,16 +417,18 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
       if (updatedObject) {
         updatedObject = this.updateAttributeOnSubscriptionDelete(attributeToSubscribe, updatedObject);
         this.dataBuffer[updatedObject.entity.id] = updatedObject;
+
         if (this.externalSubscription)
           this.externalSubscription.emit('update', updatedObject);
       }
     });
 
     queryToLookAt.on('leave', async (object: T[keyof T]) => {
-      let updatedObject = await findObjectToUpdateCallback(attributeToSubscribe, object);
-      if (updatedObject) {
-        updatedObject = this.updateAttributeOnSubscriptionDelete(attributeToSubscribe, updatedObject);
+      const objectToUpdate = await findObjectToUpdateCallback(attributeToSubscribe, object) as T | undefined;
+      if (objectToUpdate) {
+        const updatedObject = this.updateAttributeOnSubscriptionDelete(attributeToSubscribe, objectToUpdate);
         this.dataBuffer[updatedObject.entity.id] = updatedObject;
+
         if (this.externalSubscription)
           this.externalSubscription.emit('update', updatedObject);
       }
@@ -397,6 +444,7 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
       if (updatedObject) {
         updatedObject = this.updateAttributeArrayOnSubscriptionUpdate(attributeToSubscribe, updatedObject, object);
         this.dataBuffer[updatedObject.entity.id] = updatedObject;
+
         if (this.externalSubscription) {
           this.externalSubscription.emit('update', updatedObject);
           console.debug("Emitting update for", this.classname, ":", updatedObject);
@@ -411,6 +459,7 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
       if (updatedObject) {
         updatedObject = this.updateAttributeArrayOnSubscriptionUpdate(attributeToSubscribe, updatedObject, object);
         this.dataBuffer[updatedObject.entity.id] = updatedObject;
+
         if (this.externalSubscription) {
           this.externalSubscription.emit('update', updatedObject);
           console.debug("Emitting update for", this.classname, ":", updatedObject);
@@ -424,6 +473,8 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
       if (updatedObject) {
         updatedObject = this.updateAttributeArrayOnSubscriptionUpdate(attributeToSubscribe, updatedObject, object);
         this.dataBuffer[updatedObject.entity.id] = updatedObject;
+
+
         if (this.externalSubscription) {
           this.externalSubscription.emit('update', updatedObject);
           console.debug("Emitting update for", this.classname, ":", updatedObject);
@@ -436,6 +487,7 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
       if (updatedObject) {
         updatedObject = this.updateAttributeArrayOnSubscriptionDelete(attributeToSubscribe, updatedObject, object);
         this.dataBuffer[updatedObject.entity.id] = updatedObject;
+
         if (this.externalSubscription)
           this.externalSubscription.emit('update', updatedObject);
       }
@@ -447,6 +499,7 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
       if (updatedObject) {
         updatedObject = this.updateAttributeArrayOnSubscriptionDelete(attributeToSubscribe, updatedObject, object);
         this.dataBuffer[updatedObject.entity.id] = updatedObject;
+
         if (this.externalSubscription)
           this.externalSubscription.emit('update', updatedObject);
       }
@@ -519,8 +572,9 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
   public unsubscribeLiveQuery(): void {
     if (this.parseSubscription) {
       this.parseSubscription.unsubscribe();
-      this.externalSubscription.removeAllListeners();
     }
+    if(this.externalSubscription)
+      this.externalSubscription.removeAllListeners();
   }
 
 
@@ -602,7 +656,7 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
       if (entityObject[property] != undefined) {
         // If it were a relation, actually, we do not need to map anything. In fact, all the info are within
         // the parse object already, and therefore the only relevant info are within the relation itself already.
-        if (entityObject[property] instanceof EntityRelation) {
+        if ((entityObject as any)[property] instanceof EntityRelation) {
           continue;
         }
 
@@ -706,7 +760,7 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
     mappedUser.username = user.getUsername();
     mappedUser.role = user.get("role");
     mappedUser.entity = user;
-    (mappedUser as any).id = user.id;
+    mappedUser.id = user.id;
     return mappedUser;
   }
 
@@ -963,6 +1017,7 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
    * @returns the object with all the includes
    */
   async getFullObjectById(id: string): Promise<T> {
+    ;
     const query = new Parse.Query(this.classname);
     let res$ = await query.includeAll().get(id).then((res) => {
       return res;
@@ -974,13 +1029,15 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
 
     if (!res$) throw new Error("Error: Object not found.");
 
-    let returnValue: T = new this.classType();
-    returnValue = { ... this.mapParseAttributesToEntityObject(res$, 0, 3) as T };
+    let originalObject = this.mapParseAttributesToEntityObject(res$, 0, 3) as T;
+    let returnValue = Object.create(Object.getPrototypeOf(originalObject)) as T;
+    Object.assign(returnValue, originalObject);
     return returnValue as T;
   }
 
   async fetchObjectByIdIfNeeded(id: string, lazyLoad?: boolean): Promise<T | undefined> {
     if (!this.dataBuffer || Object.keys(this.dataBuffer).length == 0) {
+
       const returnValue = await this.getFullObjectById(id);
       if (this.skipInitialQuery) { // means it's actually connected via livequery, i simply did not buffer anything in the beginning!
         this.dataBuffer = {};
@@ -1053,7 +1110,7 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
     return returnValue;
   }
 
-  fetchObjectLocally(entityObject: T | IEntity): T | undefined {
+  fetchObjectLocally(entityObject: T | IEntity | undefined): T | undefined {
     if (!entityObject) return undefined;
     if ((entityObject as T)?.entity) {
       return this.fetchObjectByIdLocally((entityObject as T).entity.id);
@@ -1181,7 +1238,7 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
       }
       if (entityObject[property] && (toKeep.length == 0 || !toKeep.includes(property))) {
         if (Array.isArray(entityObject[property])) {
-          let arr = [];
+          let arr: any[] = [];
           for (let obj of (entityObject[property] as any[])) {
             if (obj.entity && obj.entity.id) {
               let newParseObj = (obj.entity as Parse.Object).clone();
@@ -1329,7 +1386,7 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
     return entityObject;
   }
 
-  async getAllFromRelation<T2 extends EntityObject>(entityObject: T, relationName: keyof T, includes?:(keyof T2)[]): Promise<T2[]> {
+  async getAllFromRelation<T2 extends EntityObject>(entityObject: T, relationName: keyof T, includes?: (keyof T2)[]): Promise<T2[]> {
     const entity = entityObject.entity as Parse.Object;
     if (!entity) {
       throw Error("Cannot get from relation: entity not set yet.");
@@ -1339,8 +1396,8 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
       throw Error("Cannot get from relation: relation not found.");
     }
     const query = relation.query();
-    if(includes){
-      for(let i of includes){
+    if (includes) {
+      for (let i of includes) {
         query.include(i as string);
       }
     } else {
@@ -1502,16 +1559,89 @@ export class ParseDataService<T extends EntityObject> implements DataInterface<T
     });
   }
 
-  public checkIfOfClass(entityObject: any){
-    if(!entityObject)
+  public checkIfOfClass(entityObject: any) {
+    if (!entityObject)
       return false;
-    if(entityObject instanceof Object){
-      if((entityObject as T).entity){
-        if((entityObject as T).entity.className == this.classname){
+    if (entityObject instanceof Object) {
+      if ((entityObject as T).entity) {
+        if ((entityObject as T).entity.className == this.classname) {
           return true;
         }
       }
     }
     return false;
+  }
+
+  public async getLawyersWithAccessToObject(objectId: string, activeOnly: boolean = true): Promise<User[]> {
+    const sc_role = await new Parse.Query(Parse.Role).equalTo("name", "SC").first();
+    if (!sc_role) {
+      return Promise.resolve([]);
+    }
+    const object = await new Parse.Query(this.classname).get(objectId);
+    const users = await sc_role.getUsers().query().notEqualTo("disabled", true).select("objectId").find();
+    const allowedUsers: any[] = [];
+    const allowedRoles: any[] = [];
+    const procedureACL = object.getACL();
+
+    if (procedureACL?.getRoleReadAccess(sc_role)) {
+      return users
+        .map(user => this.mapParseUserToUser(user))
+        .sort((a, b) => a.username!.localeCompare(b.username!));
+    }
+
+    const other_sc_roles = await new Parse.Query(Parse.Role).find() ?? [];
+    other_sc_roles.push(sc_role);
+
+    for (let roles of other_sc_roles) {
+      if (procedureACL!.getRoleReadAccess(roles) || procedureACL!.getRoleWriteAccess(roles)) {
+        allowedRoles.push(roles);
+      }
+    }
+
+    const recursiveFetchSuperRolesFunction = async (role: Parse.Role): Promise<Parse.User[]> => {
+      const superRoles = await role.getRoles().query().startsWith('name', 'SC').find() ?? [];
+      const users: any[] = [];
+      for (let superRole of superRoles) {
+        users.push(...await recursiveFetchSuperRolesFunction(superRole));
+      }
+      if (role.getName().startsWith('SC')) {
+        users.push(...await role.getUsers().query().notEqualTo("disabled", true).find());
+      }
+      return users.sort((a, b) => a.getUsername()!.localeCompare(b.getUsername()!));
+    }
+
+    const allowedUsersByRoles$ = allowedRoles.map(async role => recursiveFetchSuperRolesFunction(role));
+
+    const usersByRoles = (await Promise.all(allowedUsersByRoles$)).flat();
+
+    //let's find the difference list between users and usersByRoles
+    const notAllowedByRolesUsers = users.filter(user => !usersByRoles.some(user2 => user2.id == user.id));
+
+    if (notAllowedByRolesUsers.length == 0) {
+      return users.map(user => this.mapParseUserToUser(user)).sort((a, b) => a.username!.localeCompare(b.username!));
+    }
+
+    for (let user of notAllowedByRolesUsers) {
+      if (procedureACL!.getReadAccess(user) || procedureACL!.getWriteAccess(user)) {
+        allowedUsers.push(user);
+      }
+    }
+
+    return allowedUsers.concat(usersByRoles).map(user => this.mapParseUserToUser(user)).sort((a, b) => a.username!.localeCompare(b.username!));
+  }
+
+  public async concatenateRelationsGets(entityObjects: T[], relationName: keyof T): Promise<any[]> {
+    if (entityObjects.length == 0) return [];
+    const relations = entityObjects.map(entityObject => (entityObject.entity as any as Parse.Object).get(relationName as string));
+    const queries = relations.map(relation => relation.query());
+    const finalQuey = Parse.Query.or(...queries);
+    return this.mapParseArrayOfAttributesToEntityObject(await finalQuey.find());
+  }
+
+  public getSampleObject(): T {
+    const sample = new this.classType();
+    sample.createdBy = new User();
+    sample.updatedBy = new User();
+    return sample;
   }
 }

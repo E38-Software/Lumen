@@ -1,14 +1,15 @@
-import { EntityObject } from "../models/entityObjects.model";
-import { ParseDataService } from "./data.service";
 import { Injectable } from "@angular/core";
+import { EntityObject } from "../models/DataEntities/entityObjects.model";
+import { ParseDataService } from "./data.service";
 import * as Parse from 'parse';
-import { User } from "./users.service";
+import { Customer } from "../models/customers.model";
+import { User } from "../models/DataEntities/user.model";
 
 export class Role extends EntityObject {
-    name: string;
+    name: string = ""; //Controlla
     users: User[] = [];
     roles: Role[] = [];
-    relatedCustomer?: CustomElementRegistry;
+    relatedCustomer?: Customer;
 }
 
 export interface RoleManager {
@@ -22,8 +23,8 @@ export interface RoleManager {
     providedIn: 'root'
 })
 export class ParseRoleManger extends ParseDataService<Role> implements RoleManager {
-    private activeRoles: Role[];
-    private activerRoles$: Promise<Role[]>;
+    private activeRoles: Role[] = [];
+    private activerRoles$!: Promise<Role[]>;
     constructor() {
         super({ classname: "_Role", type: Role });
         this.startLiveQuery = false;
@@ -35,8 +36,21 @@ export class ParseRoleManger extends ParseDataService<Role> implements RoleManag
     findByName(roleName: string): Role {
         throw new Error("Method not implemented.");
     }
-    async createRole(roleName: string, users?: User[], childrenRoles?: Role[], parentRole?: Role | undefined): Promise<Role> {
-        throw new Error("Method not implemented.");
+    async createRole(roleName: string, users?: User[], childrenRoles?: Role[], parentRole?: Role | undefined, relatedCustomer?: Customer): Promise<Role> {
+        let newRole = new Role();
+        if (childrenRoles)
+            newRole.roles = childrenRoles;
+        if (users)
+            newRole.users = users;
+        newRole.name = roleName;
+        newRole = await this.save(newRole);
+        if (parentRole) {
+            let role = parentRole.entity as Parse.Role;
+            role.getRoles().add(role);
+            parentRole.entity = await role.save();
+        }
+        newRole.relatedCustomer = relatedCustomer;
+        return newRole;
     }
     changeUserRole(newRole: Role, user: User): User {
         throw new Error("Method not implemented.");
@@ -72,5 +86,17 @@ export class ParseRoleManger extends ParseDataService<Role> implements RoleManag
         } else {
             return true;
         }
+    }
+
+    public async isCurrentUserADomiciliary() {
+        if ((await this.getActiveRoles()).find(role => role.name == "domiciliary")) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    override getSampleObject(): Role {
+        throw new Error("Not Implemented Yet");
     }
 }

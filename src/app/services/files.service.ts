@@ -49,13 +49,9 @@ export class ParseFileService implements FileService {
         if (!parseFile) {
             throw new Error("File not found");
         }
-        let data = await (parseFile.entity as Parse.File).getData();
-        const binaryString: string = Buffer.from(data, 'base64').toString('binary');
-        const binaryData: Uint8Array = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-            binaryData[i] = binaryString.charCodeAt(i);
-        }
-        const blob: Blob = new Blob([binaryData], { type: 'application/octet-stream' });
+        let data = await (parseFile.entity as Parse.File).getData(); // data is Uint8Array
+        // Use 'data' directly in the Blob constructor
+        const blob: Blob = new Blob([data], { type: 'application/octet-stream' });
         const url: string = URL.createObjectURL(blob);
         const link: HTMLAnchorElement = document.createElement('a');
         link.href = url;

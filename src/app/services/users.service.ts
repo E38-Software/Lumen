@@ -1,18 +1,25 @@
+import { EntityFile } from "../models/entityObjects.model";
+import { environment } from "../environments/environment";
+import { ClientsConnections } from "../models/ActivityMonitoring/clientsConnections.model";
 import { Injectable } from "@angular/core";
 import * as Parse from 'parse';
+import { ParseDataService } from "./data.service";
 import { ParseRoleManger } from "./roles.service";
 import { ParseFileService } from "./files.service";
-import { IEntity } from "../models/entity.interface";
-import { EntityFile } from "../models/entityObjects.model";
-import { environment } from "src/environments/environment";
+import { IEntity } from "../models/DataEntities/entity.interface"; 
+import { Classnames } from "../common/classnames.model";
+import { Customer } from "../models/customers.model";
+
 
 export class User extends Parse.User {
     username?: string;
     email?: string;
     password?: string;
     role?: string;
-    entity: IEntity;
-    profilePicture: EntityFile;
+    entity?: IEntity;
+    profilePicture?: EntityFile;
+    personalSettings?: { [key: string]: string };
+    disabled?: boolean;
 }
 
 export interface UserService {
@@ -25,7 +32,7 @@ export interface UserService {
     providedIn: 'root'
 })
 export class ParseUserService implements UserService {
-    currentSession: Parse.Session;
+    currentSession?: Parse.Session;
     constructor(protected _roleService: ParseRoleManger, protected _fileService: ParseFileService) {
         Parse.initialize(`${environment.APPLICATION_ID}`, `${environment.JAVASCRIPT_KEY}`);  // use your appID & your js key
         (Parse as any).serverURL = `${environment.parseUrl}`; // use your server url
@@ -155,6 +162,20 @@ export class ParseUserService implements UserService {
         return this.mapParseUserToUser(res);
     }
 
+     public async getActiveUsersByCustomerRole(relatedCustomer: Customer): Promise<User[]> {
+        let params = { relatedCustomer: relatedCustomer.entity.id }
+        let users = (await Parse.Cloud.run("getUsersByCustomerRole", params)) as Parse.User[]
+        let mappedUser = await Promise.all(users.map(user => this.mapParseUserToUser(user)));
+        let activeUsers = mappedUser.filter(user => user.disabled !== true);
+        return activeUsers;
+    }
+
+    public async getInternalUsers(): Promise<User[]> {
+        return (await (await new Parse.Query(Parse.Role).equalTo("name", "SC").first())?.getUsers().query().notEqualTo("disabled", true).find())?.map(x => this.mapParseUserToUser(x)) as User[];
+    }
+
+
+
     public async save(user: User) {
         return this.mapParseUserToUser(await (user.entity as Parse.User).save());
     }
@@ -180,5 +201,101 @@ export class ParseUserService implements UserService {
             return file.url();
         }
         return undefined;
+    }
+
+    public async getUserSetting(user: User, settingsName: string) {
+        const userQuery = new Parse.Query(Parse.User);
+        user = this.mapParseUserToUser(await userQuery.get((user.entity ?? user).id));
+        if (user.personalSettings && user.personalSettings[settingsName])
+            return JSON.parse(user.personalSettings[settingsName]);
+        return undefined;
+    }
+
+    public async updateUserSettings(user: User, settingsName: string, settings: any) {
+        const userQuery = new Parse.Query(Parse.User);
+        userQuery.includeAll();
+        const userFetched = await userQuery.get(((user.entity ?? user) as Parse.User).id);
+        let personalSettings = userFetched.get("personalSettings");
+        if (!personalSettings) {
+            personalSettings = {};
+        }
+        personalSettings[settingsName] = JSON.stringify(settings);
+        userFetched.set("personalSettings", personalSettings);
+        const userSaved = await userFetched.save();
+        return this.mapParseUserToUser(userSaved);
+    }
+
+    public async addAssignmentToUser(user: User) {
+        const entity = (user.entity ?? user) as Parse.Object;
+        return this.mapParseUserToUser(await entity.save() as Parse.User);
+    }
+    public async setAssignmentAsSeen(user: User) {
+        // fetch the user to get the latest assignments
+        const userQuery = new Parse.Query(Parse.User);
+        userQuery.includeAll();
+        const userFetched = await userQuery.get((user.entity ?? user).id);
+
+        return this.mapParseUserToUser(await userFetched.save() as Parse.User);
+    }
+
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class ParseAcvityService extends ParseDataService<ClientsConnections> {
+    constructor(protected _userService: ParseUserService, protected _roleManager: ParseRoleManger) {
+        super(Classnames.ClientsConnections);
+        this.bufferQuery = new Parse.Query(Classnames.ClientsConnections.classname);
+        this.bufferQuery.select("user.username");
+    }
+    protected override async startupBuffer(notificationMessage?: string | undefined): Promise<void> {
+        return super.startupBuffer(notificationMessage);
+    }
+    protected override async afterBufferDownload(parseObjects: Parse.Object<Parse.Attributes>[]): Promise<ClientsConnections[]> {
+        const mapped = await super.afterBufferDownload(parseObjects);
+        return await Promise.all(mapped.map(async (connection) => {
+            const avatar = await this._userService.getLatestProfilePicture(connection.user);
+            connection.avatar = avatar;
+            return connection;
+        }));
+    }
+
+    protected override async afterSubUpdate(parseObject: Parse.Object<Parse.Attributes>): Promise<ClientsConnections | undefined> {
+        const mapped = await super.afterSubUpdate(parseObject) as ClientsConnections;
+        const avatar = await this._userService.getLatestProfilePicture(mapped.user);
+        mapped.avatar = avatar;
+        return mapped;
+    }
+
+    override destroy(entityObject: ClientsConnections): Promise<ClientsConnections> {
+        throw new Error("Method not implemented.");
+    }
+    override save(entityObject: ClientsConnections): Promise<ClientsConnections> {
+        throw new Error("Method not implemented.");
+    }
+    override saveMany(entityObjects: ClientsConnections[], returnMappingDeepness?: number, batchSize?: number): Promise<any[]> {
+        throw new Error("Method not implemented.");
+    }
+
+    public override async getBufferedData(): Promise<ClientsConnections[]> {
+        const data = await super.getBufferedData();
+        // sort data so that x.user.profilePicture is at the begin of the array
+        return data.sort((a, b) => {
+            const aHasPicture = !!a.avatar;
+            const bHasPicture = !!b.avatar;
+
+            if (aHasPicture && !bHasPicture) {
+                return -1;
+            }
+            if (!aHasPicture && bHasPicture) {
+                return 1;
+            }
+            return 0;
+        });
+    }
+
+    override getSampleObject(): ClientsConnections {
+        throw new Error("Not Implemented Yet");
     }
 }

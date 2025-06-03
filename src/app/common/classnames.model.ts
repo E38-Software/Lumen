@@ -1,6 +1,8 @@
 import { Document } from "../models/document.model";
 import { EntityObject } from "../models/entityObjects.model";
 import { Role } from "../services/roles.service";
+import { Note } from "../models/note.model";
+import { ClientsConnections } from "../models/ActivityMonitoring/clientsConnections.model";
 
 export class EntityObjectDefinition<T extends EntityObject> {
     public classname: string;
@@ -21,4 +23,6 @@ export class Classnames {
     public static File: string = "_File";
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public static Document: EntityObjectDefinition<Document> = new EntityObjectDefinition<Document>("Document", Document);
+    public static Note: EntityObjectDefinition<Note> = new EntityObjectDefinition<Note>("Note", Note);
+    public static ClientsConnections: EntityObjectDefinition<ClientsConnections> = new EntityObjectDefinition<ClientsConnections>("ClientsConnections", ClientsConnections);
 }
