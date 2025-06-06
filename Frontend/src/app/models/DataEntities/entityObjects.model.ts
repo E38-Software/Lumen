@@ -1,5 +1,5 @@
 import { DataType, DisplayName, IEntity, IFile } from "./entity.interface";
-import { Classnames } from "src/app/common/classnames.model";
+import { Classnames } from "../../common/classnames.model";
 import { User } from "./user.model";
 
 export class EntityObject {
@@ -7,11 +7,11 @@ export class EntityObject {
     // public get id(): string {
     //     return this.entity.id;
     // }
-    public entity: IEntity;
+    public entity!: IEntity;
     /**
      * @deprecated, use the inerithed one from the entity
      */
-    public classname: string;
+    public classname!: string;
     // public entityProperties: string[];
     // public entityArrayProperties: string[]
     public updatedBy?: User;
@@ -25,10 +25,10 @@ export class EntityObject {
 }
 
 export class EntityFile {
-    public entity: IFile;
-    public url: string;
-    public name: string;
-    public fileName: string;
+    public entity!: IFile;
+    public url!: string;
+    public name!: string;
+    public fileName!: string;
 }
 
 export class EntityRelation {

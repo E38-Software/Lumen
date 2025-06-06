@@ -1,25 +1,25 @@
-import { EntityObjectDefinition } from "src/app/common/classnames.model";
+import { EntityObjectDefinition } from "../../common/classnames.model";
 import { EntityObject } from "./entityObjects.model";
 
 class Where <T extends EntityObject> {
     field?: keyof T;
-    operator: Condition;
+    operator?: Condition;
     value: any;
 }
 
 class Conditions {
-    equal: string;
-    notEqual: string;
-    greaterThan: string;
-    greaterThanOrEqual: string;
-    lessThan: string;
-    lessThanOrEqual: string;
-    exists: string;
-    doesNotExist: string;
-    equalToOn: string;
-    notEqualToOn: string;
-    equalToFrom: string;
-    notEqualToFrom: string;
+    equal?: string;
+    notEqual?: string;
+    greaterThan?: string;
+    greaterThanOrEqual?: string;
+    lessThan?: string;
+    lessThanOrEqual?: string;
+    exists?: string;
+    doesNotExist?: string;
+    equalToOn?: string;
+    notEqualToOn?: string;
+    equalToFrom?: string;
+    notEqualToFrom?: string;
 }
 
 // let's create a new type whose actual type is keyof Conditions

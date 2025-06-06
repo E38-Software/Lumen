@@ -1,0 +1,31 @@
+{
+    "appId": "codebase",
+    "javascriptKey": "javascriptKey",
+    "restAPIKey": "restAPIKey",
+    "clientKey": "clientKey",
+    "masterKey": "master_key",
+    "masterKeyIps": "0.0.0.0",
+    "verifyUserEmails": false,
+    "liveQuery": {
+        "classNames": [
+        ]
+    },
+    "liveQueryServerOptions": {
+        "appId": "codebase",
+        "masterKey": "master_key",
+        "serverURL": "http://localhost:1337/parse"
+    },
+    "startLiveQueryServer": true,
+    "databaseURI": "mongodb://root:MongoloideDelCazzo@mongoDev:27017/codebase-test?authSource=admin",
+    "cloud": "/root/ParseTypescriptSDK/Backend/cloud/main.js",
+    "cacheMaxSize": 10000,
+    "defaultLimit": 60000,
+    "objectIdSize": 15,
+    "verbose": true,
+    "publicServerURL": "http://localhost:1337/parse",
+    "enableCollationCaseComparison": true,
+    "convertEmailToLowercase": true,
+    "convertUsernameToLowercase": true,
+    "cluster": false,
+    "allowClientClassCreation": true
+}

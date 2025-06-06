@@ -1,7 +1,7 @@
-import { environment } from "../environments/environment.prod";
-import * as Parse from 'parse';
+import { environment } from "../../environments/environment.prod";
+import Parse from "parse";
 import { EntityFile, EntityObject, EntityRelation } from "../models/DataEntities/entityObjects.model";
-import EventEmitter from "events";
+import { EventEmitter } from "events";
 import { IEntity } from "../models/DataEntities/entity.interface";
 import { Classnames, EntityObjectDefinition } from "../common/classnames.model";
 import { User } from "../models/DataEntities/user.model";
@@ -99,6 +99,9 @@ export type CustomAttributesMapping<T0 extends EntityObject> = {
  * Data interface implementation for Parse Server
  */
 export abstract class ParseDataService<T extends EntityObject> implements DataInterface<T> {
+  upload(name: string, file: File, type: string) {
+    throw new Error('Method not implemented.');
+  }
   protected classType: { new(): T };
   protected classname: string;
 
@@ -131,8 +134,8 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
 
   public constructor(entityClass: EntityObjectDefinition<T>) {
     Parse.initialize(`${environment.APPLICATION_ID}`, `${environment.JAVASCRIPT_KEY}`);  // use your appID & your js key
-    (Parse as any).serverURL = `${environment.parseUrl}`; // use your server url
-    (Parse as any).liveQueryServerURL = `${environment.LIVE_QUERY_SERVER}`;
+    Parse.serverURL = `${environment.parseUrl}`; // use your server url
+    //(Parse as any).liveQueryServerURL = `${environment.LIVE_QUERY_SERVER}`;*/
     this.classType = entityClass.type;
     this.classname = entityClass.classname;
 

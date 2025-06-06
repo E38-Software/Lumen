@@ -1,5 +1,5 @@
-import { EntityFile } from "../models/entityObjects.model";
-import { environment } from "../environments/environment";
+import { EntityFile } from "../models/DataEntities/entityObjects.model";
+import { environment } from "../../environments/environment";
 import { ClientsConnections } from "../models/ActivityMonitoring/clientsConnections.model";
 import { Injectable } from "@angular/core";
 import * as Parse from 'parse';
@@ -35,8 +35,8 @@ export class ParseUserService implements UserService {
     currentSession?: Parse.Session;
     constructor(protected _roleService: ParseRoleManger, protected _fileService: ParseFileService) {
         Parse.initialize(`${environment.APPLICATION_ID}`, `${environment.JAVASCRIPT_KEY}`);  // use your appID & your js key
-        (Parse as any).serverURL = `${environment.parseUrl}`; // use your server url
-        (Parse as any).liveQueryServerURL = `${environment.LIVE_QUERY_SERVER}`;
+        /*(Parse as any).serverURL = `${environment.parseUrl}`; // use your server url
+        (Parse as any).liveQueryServerURL = `${environment.LIVE_QUERY_SERVER}`;*/
     }
 
     protected mapParseUserToUser(user: Parse.User) {
@@ -50,19 +50,21 @@ export class ParseUserService implements UserService {
         return mappedUser;
     }
 
-    async signup(username: string, password: string, email: string, role?: string[]) {
+    async signup(username: string, password: string, email: string) {
         let user = new Parse.User();
         user.set("username", username);
         user.set("password", password);
         user.set("email", email);
-        const rolesQuery = new Parse.Query(Parse.Role);
+        console.log("User before signUp", user);
+        user = await user.signUp();
+        /*const rolesQuery = new Parse.Query(Parse.Role);
         rolesQuery.equalTo("name", role);
         let roles = await rolesQuery.find();
-        user = await user.signUp();
+        
         for (let role of roles as Parse.Role[]) {
             role.getUsers().add(user);
             role.save();
-        }
+        }*/
         return this.mapParseUserToUser(user);
     }
 
@@ -249,10 +251,10 @@ export class ParseAcvityService extends ParseDataService<ClientsConnections> {
         this.bufferQuery = new Parse.Query(Classnames.ClientsConnections.classname);
         this.bufferQuery.select("user.username");
     }
-    protected override async startupBuffer(notificationMessage?: string | undefined): Promise<void> {
+    protected async CustomstartupBuffer(notificationMessage?: string | undefined): Promise<void> {
         return super.startupBuffer(notificationMessage);
     }
-    protected override async afterBufferDownload(parseObjects: Parse.Object<Parse.Attributes>[]): Promise<ClientsConnections[]> {
+    protected async CustomafterBufferDownload(parseObjects: Parse.Object<Parse.Attributes>[]): Promise<ClientsConnections[]> {
         const mapped = await super.afterBufferDownload(parseObjects);
         return await Promise.all(mapped.map(async (connection) => {
             const avatar = await this._userService.getLatestProfilePicture(connection.user);
@@ -261,24 +263,15 @@ export class ParseAcvityService extends ParseDataService<ClientsConnections> {
         }));
     }
 
-    protected override async afterSubUpdate(parseObject: Parse.Object<Parse.Attributes>): Promise<ClientsConnections | undefined> {
+    protected async CustomafterSubUpdate(parseObject: Parse.Object<Parse.Attributes>): Promise<ClientsConnections | undefined> {
         const mapped = await super.afterSubUpdate(parseObject) as ClientsConnections;
         const avatar = await this._userService.getLatestProfilePicture(mapped.user);
         mapped.avatar = avatar;
         return mapped;
     }
 
-    override destroy(entityObject: ClientsConnections): Promise<ClientsConnections> {
-        throw new Error("Method not implemented.");
-    }
-    override save(entityObject: ClientsConnections): Promise<ClientsConnections> {
-        throw new Error("Method not implemented.");
-    }
-    override saveMany(entityObjects: ClientsConnections[], returnMappingDeepness?: number, batchSize?: number): Promise<any[]> {
-        throw new Error("Method not implemented.");
-    }
 
-    public override async getBufferedData(): Promise<ClientsConnections[]> {
+    public async CustomgetBufferedData(): Promise<ClientsConnections[]> {
         const data = await super.getBufferedData();
         // sort data so that x.user.profilePicture is at the begin of the array
         return data.sort((a, b) => {
@@ -295,7 +288,4 @@ export class ParseAcvityService extends ParseDataService<ClientsConnections> {
         });
     }
 
-    override getSampleObject(): ClientsConnections {
-        throw new Error("Not Implemented Yet");
-    }
 }

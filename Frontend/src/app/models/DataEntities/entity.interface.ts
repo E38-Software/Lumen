@@ -13,13 +13,13 @@ export interface IFile {
 }
 
 class typeAvailable {
-    string: string;
-    number: number;
-    boolean: boolean;
-    Date: Date;
-    Object: Object;
-    EntityRelation: EntityRelation;
-    unknown: never;
+    string!: string;
+    number!: number;
+    boolean!: boolean;
+    Date!: Date;
+    Object!: Object;
+    EntityRelation!: EntityRelation;
+    unknown!: never;
 }
 
 export type DataTypeAvailable = keyof typeAvailable;

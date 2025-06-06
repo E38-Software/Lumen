@@ -1,0 +1,6 @@
+core
+logs/*
+mongobackup/*
+*/node_modules/*
+.env
+*/logs

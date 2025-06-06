@@ -1,0 +1,2 @@
+"databaseURI": "mongodb+srv://e38:z0AWoNADVgXlxj1g@servandademo.pooh8p4.mongodb.net/?retryWrites=true&w=majority",
+"databaseURI": "mongodb+srv://e38:mPe0yP6yAueFhz2G4V66D@servanda-test-db.mongocluster.cosmos.azure.com/?tls=true&authMechanism=SCRAM-SHA-256&retrywrites=false&maxIdleTimeMS=120000"

@@ -2,7 +2,7 @@ import { HttpClient, HttpHeaders, HttpParams } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import * as Parse from 'parse';
 import { Buffer } from 'buffer';
-import { EntityFile } from "../models/entityObjects.model";
+import { EntityFile } from "../models/DataEntities/entityObjects.model";
 import { Document } from "../models/document.model";
 
 export interface FileService {
