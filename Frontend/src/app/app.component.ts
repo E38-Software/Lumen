@@ -43,7 +43,7 @@ export class AppComponent implements OnInit {
         console.error("Error retrieving documents:", error);
       });
     }).catch((error) => {
-      console.error("Error logging in user:", error);  
+      console.error("Error logging in user:", error);
     });
 
   }
