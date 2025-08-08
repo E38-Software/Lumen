@@ -1,21 +1,21 @@
-import { HttpClient, HttpHeaders, HttpParams } from "@angular/common/http";
-import { Injectable } from "@angular/core";
-import * as Parse from 'parse';
-import { Buffer } from 'buffer';
+import { HttpClient } from '@angular/common/http'
+import { Injectable, Inject } from "@angular/core";
 import { EntityFile } from "../models/DataEntities/entityObjects.model";
 import { Document } from "../models/document.model";
+import Parse from 'parse';
 
 export interface FileService {
     upload(name: string, data: { base64: string } | number[] | File, type: string): Promise<any>;
     delete(file: EntityFile): Promise<any>;
 }
+;
 
 @Injectable({
-    providedIn: 'root'
+  providedIn: 'root'
 })
 export class ParseFileService implements FileService {
 
-    constructor(private _httpService: HttpClient) {
+    constructor(@Inject(HttpClient) private _httpService: HttpClient) {
 
     }
 
@@ -29,11 +29,11 @@ export class ParseFileService implements FileService {
         let filename = parts.join('_');
         let parseFile = new Parse.File(`${filename}.${extension}`.replace(/[^a-zA-Z0-9.]/g, '_'), data, type);
         // let parseFile = new Parse.File(name.replace(/[^a-zA-Z0-9.]/g, '_'), data, type);
-        parseFile = await parseFile.save();
+        parseFile = await parseFile.save()!;
         // remove from file name the special characters
         newFile.name = name;
         // newFile.data = data;
-        newFile.url = parseFile._url;
+        newFile.url = parseFile._url ?? "";
         newFile.entity = parseFile;
         return newFile;
     }
@@ -61,7 +61,7 @@ export class ParseFileService implements FileService {
         if (file.file) {
             if (!link.download) {
                 // tkae the full file.name after the first '_' (the name of the file is the name of the document)
-                let fileName = file.file.name.split('_');
+                let fileName = (file.file.name ?? '').split('_');
                 fileName.splice(0, 1);
                 link.download = fileName.join('_');
             }
@@ -73,7 +73,7 @@ export class ParseFileService implements FileService {
         else if (file.relatedFile) {
             if (!link.download) {
                 // tkae the full file.name after the first '_' (the name of the file is the name of the document)
-                let fileName = file.relatedFile.name.split('_');
+                let fileName = (file.relatedFile.name ?? '').split('_');
                 fileName.splice(0, 1);
                 link.download = fileName.join('_');
             }

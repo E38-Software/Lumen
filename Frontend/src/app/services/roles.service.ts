@@ -1,32 +1,20 @@
 import { Injectable } from "@angular/core";
 import { EntityObject } from "../models/DataEntities/entityObjects.model";
 import { ParseDataService } from "./data.service";
-import * as Parse from 'parse';
+import Parse from "parse";
 import { Customer } from "../models/customers.model";
 import { User } from "../models/DataEntities/user.model";
-
-export class Role extends EntityObject {
-    name: string = ""; //Controlla
-    users: User[] = [];
-    roles: Role[] = [];
-    relatedCustomer?: Customer;
-}
-
-export interface RoleManager {
-    createRole(roleName: string, users?: User[], childrenRoles?: Role[], parentRole?: Role | undefined): Promise<Role>;
-    addUserToRole(role: Role, user: User): User;
-    changeUserRole(newRole: Role, user: User): User;
-    findByName(roleName: string): Role;
-}
+import { Role } from "../models/role.model";
+import { Classnames } from "../common/classnames.model";
 
 @Injectable({
     providedIn: 'root'
 })
-export class ParseRoleManger extends ParseDataService<Role> implements RoleManager {
+export class ParseRoleManger extends ParseDataService<Role> {
     private activeRoles: Role[] = [];
     private activerRoles$!: Promise<Role[]>;
     constructor() {
-        super({ classname: "_Role", type: Role });
+        super(Classnames._Role);
         this.startLiveQuery = false;
     }
 
@@ -47,7 +35,7 @@ export class ParseRoleManger extends ParseDataService<Role> implements RoleManag
         if (parentRole) {
             let role = parentRole.entity as Parse.Role;
             role.getRoles().add(role);
-            parentRole.entity = await role.save();
+            parentRole.entity = await role.save() as any;
         }
         newRole.relatedCustomer = relatedCustomer;
         return newRole;

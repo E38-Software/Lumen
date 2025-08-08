@@ -1,22 +1,19 @@
 import { EntityFile } from "../models/DataEntities/entityObjects.model";
 import { environment } from "../../environments/environment";
-import { ClientsConnections } from "../models/ActivityMonitoring/clientsConnections.model";
 import { Injectable } from "@angular/core";
-import * as Parse from 'parse';
-import { ParseDataService } from "./data.service";
+import Parse from "parse";
 import { ParseRoleManger } from "./roles.service";
 import { ParseFileService } from "./files.service";
 import { IEntity } from "../models/DataEntities/entity.interface"; 
-import { Classnames } from "../common/classnames.model";
 import { Customer } from "../models/customers.model";
 
 
 export class User extends Parse.User {
-    username?: string;
-    email?: string;
-    password?: string;
-    role?: string;
-    entity?: IEntity;
+    username?: string | null;
+    email?: string | null;
+    password?: string | null;
+    role?: string | null;
+    entity?: IEntity | null;
     profilePicture?: EntityFile;
     personalSettings?: { [key: string]: string };
     disabled?: boolean;
@@ -35,8 +32,8 @@ export class ParseUserService implements UserService {
     currentSession?: Parse.Session;
     constructor(protected _roleService: ParseRoleManger, protected _fileService: ParseFileService) {
         Parse.initialize(`${environment.APPLICATION_ID}`, `${environment.JAVASCRIPT_KEY}`);  // use your appID & your js key
-        /*(Parse as any).serverURL = `${environment.parseUrl}`; // use your server url
-        (Parse as any).liveQueryServerURL = `${environment.LIVE_QUERY_SERVER}`;*/
+        (Parse as any).serverURL = `${environment.parseUrl}`; // use your server url
+        (Parse as any).liveQueryServerURL = `${environment.LIVE_QUERY_SERVER}`;
     }
 
     protected mapParseUserToUser(user: Parse.User) {
@@ -44,7 +41,7 @@ export class ParseUserService implements UserService {
         mappedUser.email = user.getEmail();
         mappedUser.username = user.getUsername();
         mappedUser.role = user.get("role");
-        mappedUser.entity = user;
+        mappedUser.entity = user as IEntity;
         (mappedUser as any).id = user.id;
         mappedUser.profilePicture = user.get("profilePicture");
         return mappedUser;
@@ -55,7 +52,7 @@ export class ParseUserService implements UserService {
         user.set("username", username);
         user.set("password", password);
         user.set("email", email);
-        console.log("User before signUp", user);
+        // console.log("User before signUp", user);
         user = await user.signUp();
         /*const rolesQuery = new Parse.Query(Parse.Role);
         rolesQuery.equalTo("name", role);
@@ -81,16 +78,16 @@ export class ParseUserService implements UserService {
     }
 
     async checkSessionValidity() {
-        let currentUser = await Parse.User.current();
+        let currentUser = Parse.User.current() as Parse.User;
         if (currentUser) {
             let query = new Parse.Query(Parse.User);
-            return query.get(currentUser!.id).then((res) => {
+            return query.get(currentUser!.id!).then((res) => {
                 return res;
             },
                 (err) => {
                     switch (err.code) {
                         case Parse.Error.INVALID_SESSION_TOKEN:
-                            console.log("Invalid Session, need to log in again!")
+                            // console.log("Invalid Session, need to log in again!")
                             Parse.User.logOut();
                             return undefined;
                     }
@@ -118,7 +115,7 @@ export class ParseUserService implements UserService {
 
     public logout() {
         Parse.User.logOut().then(() => {
-            console.log("Logged out successfully!");
+            // console.log("Logged out successfully!");
         })
     }
 
@@ -196,7 +193,7 @@ export class ParseUserService implements UserService {
         }
         if (!file) {
             const entity = (user.entity ?? user) as Parse.Object;
-            const parseObject = await entity.fetch();
+            const parseObject = await entity.fetch({});
             file = parseObject.get("profilePicture") as Parse.File;
         }
         if (file) {
@@ -207,7 +204,7 @@ export class ParseUserService implements UserService {
 
     public async getUserSetting(user: User, settingsName: string) {
         const userQuery = new Parse.Query(Parse.User);
-        user = this.mapParseUserToUser(await userQuery.get((user.entity ?? user).id));
+        user = this.mapParseUserToUser(await userQuery.get((user.entity ?? user).id!));
         if (user.personalSettings && user.personalSettings[settingsName])
             return JSON.parse(user.personalSettings[settingsName]);
         return undefined;
@@ -216,7 +213,7 @@ export class ParseUserService implements UserService {
     public async updateUserSettings(user: User, settingsName: string, settings: any) {
         const userQuery = new Parse.Query(Parse.User);
         userQuery.includeAll();
-        const userFetched = await userQuery.get(((user.entity ?? user) as Parse.User).id);
+        const userFetched = await userQuery.get(((user.entity ?? user) as Parse.User).id!);
         let personalSettings = userFetched.get("personalSettings");
         if (!personalSettings) {
             personalSettings = {};
@@ -235,13 +232,14 @@ export class ParseUserService implements UserService {
         // fetch the user to get the latest assignments
         const userQuery = new Parse.Query(Parse.User);
         userQuery.includeAll();
-        const userFetched = await userQuery.get((user.entity ?? user).id);
+        const userFetched = await userQuery.get((user.entity ?? user).id!);
 
         return this.mapParseUserToUser(await userFetched.save() as Parse.User);
     }
 
 }
 
+/*
 @Injectable({
     providedIn: 'root'
 })
@@ -249,13 +247,15 @@ export class ParseAcvityService extends ParseDataService<ClientsConnections> {
     constructor(protected _userService: ParseUserService, protected _roleManager: ParseRoleManger) {
         super(Classnames.ClientsConnections);
         this.bufferQuery = new Parse.Query(Classnames.ClientsConnections.classname);
-        this.bufferQuery.select("user.username");
+        if (this.bufferQuery) {
+            this.bufferQuery.select("user.username");
+        }
     }
     protected async CustomstartupBuffer(notificationMessage?: string | undefined): Promise<void> {
         return super.startupBuffer(notificationMessage);
     }
-    protected async CustomafterBufferDownload(parseObjects: Parse.Object<Parse.Attributes>[]): Promise<ClientsConnections[]> {
-        const mapped = await super.afterBufferDownload(parseObjects);
+    protected async CustomafterBufferDownload(parseObjects: ParseObject<Parse.Attributes>[]): Promise<ClientsConnections[]> {
+        const mapped = await super.afterBufferDownload(parseObjects) as ClientsConnections[];
         return await Promise.all(mapped.map(async (connection) => {
             const avatar = await this._userService.getLatestProfilePicture(connection.user);
             connection.avatar = avatar;
@@ -289,3 +289,4 @@ export class ParseAcvityService extends ParseDataService<ClientsConnections> {
     }
 
 }
+    */

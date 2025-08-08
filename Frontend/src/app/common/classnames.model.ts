@@ -1,8 +1,8 @@
 import { Document } from "../models/document.model";
 import { EntityObject } from "../models/DataEntities/entityObjects.model";
-import { Role } from "../services/roles.service";
 import { Note } from "../models/note.model";
 import { ClientsConnections } from "../models/ActivityMonitoring/clientsConnections.model";
+import { Role } from "../models/role.model";
 
 export class EntityObjectDefinition<T extends EntityObject> {
     public classname: string;

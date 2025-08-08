@@ -1,11 +1,10 @@
-import { environment } from "../../environments/environment.prod";
-import Parse from "parse";
+import { environment } from "../../environments/environment";
 import { EntityFile, EntityObject, EntityRelation } from "../models/DataEntities/entityObjects.model";
 import { EventEmitter } from "events";
 import { IEntity } from "../models/DataEntities/entity.interface";
 import { Classnames, EntityObjectDefinition } from "../common/classnames.model";
 import { User } from "../models/DataEntities/user.model";
-
+import Parse from "parse";
 
 
 export interface DataInterface<T extends EntityObject> {
@@ -91,7 +90,7 @@ export interface DataInterface<T extends EntityObject> {
   getSampleObject(): T;
 }
 
-export type CustomMappingFunction<T extends EntityObject | T[]> = (parseElement: Parse.Object<Parse.Attributes> | Parse.Object<Parse.Attributes>[]) => T | T[];
+export type CustomMappingFunction<T extends EntityObject | T[]> = (parseElement: Parse.Object | Parse.Object[]) => T | T[];
 export type CustomAttributesMapping<T0 extends EntityObject> = {
   [K in keyof T0]?: CustomMappingFunction<any>;
 };
@@ -99,9 +98,6 @@ export type CustomAttributesMapping<T0 extends EntityObject> = {
  * Data interface implementation for Parse Server
  */
 export abstract class ParseDataService<T extends EntityObject> implements DataInterface<T> {
-  upload(name: string, file: File, type: string) {
-    throw new Error('Method not implemented.');
-  }
   protected classType: { new(): T };
   protected classname: string;
 
@@ -110,7 +106,7 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
   protected initialIncludes?: string[];
   protected bufferQuery: Parse.Query | undefined;
 
-  protected bufferQuery$: Promise<Parse.Object<Parse.Attributes>[]> = Promise.resolve([]);;
+  protected bufferQuery$: Promise<Parse.Object[]> | undefined;
 
   protected bufferSuccessMessage?: string;
   protected bufferStarted: boolean = false;
@@ -122,7 +118,7 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
 
   protected fullyFetchedBuffer: { [key: string]: boolean } = {};
 
-  private parseSubscription: Parse.LiveQuerySubscription | undefined = undefined;
+  private parseSubscription: any | undefined = undefined;
   protected externalSubscription?: EventEmitter;
   protected startLiveQuery?: boolean = true;
   protected lazyLoad?: boolean = true;
@@ -135,7 +131,7 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
   public constructor(entityClass: EntityObjectDefinition<T>) {
     Parse.initialize(`${environment.APPLICATION_ID}`, `${environment.JAVASCRIPT_KEY}`);  // use your appID & your js key
     Parse.serverURL = `${environment.parseUrl}`; // use your server url
-    //(Parse as any).liveQueryServerURL = `${environment.LIVE_QUERY_SERVER}`;*/
+    (Parse as any).liveQueryServerURL = `${environment.LIVE_QUERY_SERVER}`;
     this.classType = entityClass.type;
     this.classname = entityClass.classname;
 
@@ -195,10 +191,10 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
     if (!this.parseSubscription) {
       this.parseSubscription = await this.bufferQuery!.subscribe(activeSessionToken);
 
-      this.parseSubscription.on('open', (object) => {
-        console.log("Livequery enabled for", this.classname);
+      this.parseSubscription.on('open', (object: Parse.Object) => {
+        // console.log("Livequery enabled for", this.classname);
       });
-      this.parseSubscription.on('create', async (object) => {
+      this.parseSubscription.on('create', async (object: Parse.Object) => {
         const updated = await this.afterSubUpdate(object);
         if (!updated)
           return;
@@ -213,7 +209,7 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
           this.externalSubscription.emit('create', updated);
         }
       });
-      this.parseSubscription.on('update', async (object) => {
+      this.parseSubscription.on('update', async (object: Parse.Object) => {
         if (this.dataBuffer) {
           let updated = await this.afterSubUpdate(object);
           if (!updated)
@@ -227,7 +223,7 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
           }
         }
       });
-      this.parseSubscription.on('enter', async (object) => {
+      this.parseSubscription.on('enter', async (object: Parse.Object) => {
         let updated = await this.afterSubUpdate(object);
         if (!updated)
           return;
@@ -243,27 +239,27 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
         }
       });
 
-      this.parseSubscription.on('leave', (object) => {
+      this.parseSubscription.on('leave', (object: Parse.Object) => {
         // let index = this.unindexedBufferData!.indexOf(this.unindexedBufferData!.find(x => x.entity.id == object.id)!);
         // this.unindexedBufferData!.splice(index, 1);
         if (this.externalSubscription && this.dataBuffer) {
-          this.externalSubscription.emit('leave', this.dataBuffer[object.id]);
-          delete this.dataBuffer[object.id];
+          this.externalSubscription.emit('leave', this.dataBuffer[object.id!]);
+          delete this.dataBuffer[object.id!];
         }
         if (this.initialBufferQuery && this.initialBufferQuery != this.bufferQuery && !this.skipInitialQuery) {
-          delete this.fullyFetchedBuffer[object.id];
+          delete this.fullyFetchedBuffer[object.id!];
         }
       });
 
-      this.parseSubscription.on('delete', (object) => {
+      this.parseSubscription.on('delete', (object: Parse.Object) => {
         // let index = this.unindexedBufferData!.indexOf(this.unindexedBufferData!.find(x => x.entity.id == object.id)!);
         // this.unindexedBufferData!.splice(index, 1);
         if (this.externalSubscription && this.dataBuffer) {
-          this.externalSubscription.emit('delete', this.dataBuffer[object.id]);
-          delete this.dataBuffer[object.id];
+          this.externalSubscription.emit('delete', this.dataBuffer[object.id!]);
+          delete this.dataBuffer[object.id!];
         }
         if (this.initialBufferQuery && this.initialBufferQuery != this.bufferQuery && !this.skipInitialQuery) {
-          delete this.fullyFetchedBuffer[object.id];
+          delete this.fullyFetchedBuffer[object.id!];
         }
       });
     }
@@ -306,7 +302,7 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
           return;
         },
           (error) => {
-            console.log("Error in startupBuffer for", this.classname, error);
+            // console.log("Error in startupBuffer for", this.classname, error);
             this.dataBuffer = {};
             return;
           });
@@ -331,7 +327,7 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
             this.externalSubscription.emit('enter', object);
           }
         }).then(() => {
-          console.log("Lazy load for", this.classname, "completed");
+          // console.log("Lazy load for", this.classname, "completed");
           this.lazyLoadDone = true;
         }, (error) => {
           console.error("Error in lazy load for", this.classname, error);
@@ -629,7 +625,7 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
             // This library is not meant to modify the parse object directly, so at the moment there is no scenario that 
             // allows space for a direct change to such an object before a save.
             // If the object is dirty, something went wrong (like an error in a previous save, unexpected concurrency...).
-            // parse.Object.dirty() tells us if that parse object is somehow modified, giving us a clue
+            // Parse.Object.dirty() tells us if that parse object is somehow modified, giving us a clue
             // about its validity.
             throw new Error("The object is dirty, please fetch it before saving it");
           }
@@ -706,7 +702,7 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
       throw err;
     });
 
-    entityObject.entity = savedEntity;
+    entityObject.entity = savedEntity as IEntity;
     return entityObject as T;
   }
 
@@ -751,19 +747,20 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
     let newFile: EntityFile = new EntityFile();
     newFile.name = parseFile.name();
     // newFile.data = await parseFile.getData();
-    newFile.url = parseFile.url();
+    newFile.url = parseFile.url() ?? "";
     newFile.entity = parseFile;
     return newFile;
   }
 
-  protected mapParseUserToUser(user: Parse.User) {
+  protected mapParseUserToUser(user: Parse.User | Parse.User) {
     let mappedUser: User = new User();
     // mappedUser = {...user} as User;
-    mappedUser.email = user.getEmail();
-    mappedUser.username = user.getUsername();
+    mappedUser.email = user.getEmail() ?? "";
+    mappedUser.username = user.getUsername() ?? "";
     mappedUser.role = user.get("role");
-    mappedUser.entity = user;
-    mappedUser.id = user.id;
+    mappedUser.id = user.id ?? "";
+    mappedUser.entity = user as any;
+
     return mappedUser;
   }
 
@@ -773,9 +770,10 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
    * @param parseElement like a queried element
    * @returns a mapped model
    */
-  protected mapParseAttributesToEntityObject<K extends keyof Classnames, E extends EntityObject, KE extends keyof E>(parseElement: Parse.Object<Parse.Attributes>, deepLevel: number = 0, maxDeep: number = 3, customMapping?: CustomAttributesMapping<any>): any | undefined {
+  protected mapParseAttributesToEntityObject<K extends keyof Classnames, E extends EntityObject, KE extends keyof E>(parseElement: Parse.Object | Parse.Object | undefined, deepLevel: number = 0, maxDeep: number = 3, customMapping?: CustomAttributesMapping<any>): any | undefined {
     if (!parseElement)
       return undefined;
+    parseElement = parseElement as Parse.Object
     const classname: K = parseElement.className as K;
 
     const classReference: EntityObjectDefinition<E> = Classnames[classname];
@@ -785,7 +783,7 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
     }
     if (typeof classReference === "string") {
       if (classReference === "_User") {
-        return this.mapParseUserToUser(parseElement as Parse.User);
+        return this.mapParseUserToUser(parseElement as any as Parse.User);
       }
       else if (classReference === "File") {
         return this.mapFile(parseElement as any as Parse.File);
@@ -814,7 +812,7 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
           (m[property] as any) = this.mapParseArrayOfAttributesToEntityObject(parseElement.attributes[element] as Parse.Object[], deepLevel + 1, maxDeep);
         }
         else if (parseElement.attributes[element] instanceof Parse.User) {
-          (m[property] as any) = this.mapParseUserToUser(parseElement.attributes[element] as Parse.User);
+          (m[property] as any) = this.mapParseUserToUser(parseElement.attributes[element] as any as Parse.User);
         }
         else if (parseElement.attributes[element] instanceof Parse.Role) {
           (m[property] as any) = this.mapParseAttributesToEntityObject(parseElement.attributes[element] as Parse.Role, deepLevel + 1, maxDeep);
@@ -823,6 +821,9 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
           if (parseRelation.key) {
             if (element != parseRelation.key) {
               throw Error("Relation key and  Parse.Object's attribute name do not match");
+            }
+            if(!parseRelation.parent || !parseRelation.targetClassName) {
+              throw Error("Relation parent or targetClassName not found");
             }
             const parentClass = parseRelation.parent.className as keyof Classnames;
             const childClass = parseRelation.targetClassName as keyof Classnames;
@@ -836,11 +837,11 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
 
       });
     }
-    m["entity"] = parseElement;
+    m["entity"] = parseElement as IEntity;
     return m;
   }
 
-  protected mapParseArrayOfAttributesToEntityObject(parseElements: Parse.Object<Parse.Attributes>[], deepLevel: number = 0, maxDeep: number = 2, customMapping?: CustomAttributesMapping<any>): any[] {
+  protected mapParseArrayOfAttributesToEntityObject(parseElements: Parse.Object<any>[], deepLevel: number = 0, maxDeep: number = 2, customMapping?: CustomAttributesMapping<any>): any[] {
     if (maxDeep != deepLevel)
       return parseElements.map(parseElement => this.mapParseAttributesToEntityObject(parseElement, deepLevel, maxDeep, customMapping));
     else
@@ -985,18 +986,18 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
    * @returns the refreshed object
    */
   async fetch(entityObject: T | IEntity): Promise<T> {
-    let fetchedObject;
+    let fetchedObject: Parse.Object<any> | undefined;
     if ((entityObject as T).entity) {
-      fetchedObject = await ((entityObject as T).entity as Parse.Object).fetch().then((res) => {
-        return res;
+      fetchedObject = await ((entityObject as T).entity as Parse.Object).fetch({}).then((res) => {
+        return res as any as Parse.Object<any>;
       },
         (err) => {
           console.error("Cannot fetch object", err);
           return undefined;
         })
     } else {
-      fetchedObject = await (entityObject as IEntity as Parse.Object).fetch().then((res) => {
-        return res;
+      fetchedObject = await (entityObject as IEntity as Parse.Object).fetch({}).then((res: Parse.Object) => {
+        return res as any as Parse.Object<any>;
       },
         (err) => {
           console.error("Cannot fetch object", err);
@@ -1283,7 +1284,7 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
         return undefined;
       });
     if (!entity) throw new Error("Error: Object not found.");
-    entityObject.entity = entity;
+    entityObject.entity = entity as IEntity;
     return entityObject;
   }
 
@@ -1292,7 +1293,7 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
   }
 
   async saveMany(entityObjects: T[], returnMappingDeepness = 2, batchSize = 150) {
-    console.log("Inizio mapping");
+    // console.log("Inizio mapping");
 
     const mappings$ = entityObjects.map((x) => {
       return this.mappings(x);
@@ -1300,8 +1301,8 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
 
     const entities = await Promise.all(mappings$);
 
-    console.log("Fine mapping");
-    console.log("Inizio salvataggio");
+    // console.log("Fine mapping");
+    // console.log("Inizio salvataggio");
     const savedEntities: Parse.Object[] = await Parse.Object.saveAll(entities, { batchSize: batchSize }).then((res) => {
       return res;
     },
@@ -1309,10 +1310,10 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
         console.error("Cannot save object", err);
         throw new Error("Cannot save objects");
       });
-    console.log("Fine salvataggio");
-    console.log("Inizio interpretazione risposta");
+    // console.log("Fine salvataggio");
+    // console.log("Inizio interpretazione risposta");
     const returnValue = savedEntities.map(x => this.mapParseAttributesToEntityObject(x, 0, returnMappingDeepness));
-    console.log("Termine interpretazione risposta");
+    // console.log("Termine interpretazione risposta");
     return returnValue;
   }
 
@@ -1349,7 +1350,7 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
         throw Error("Cannot add to relation: elementToAdd.entity is dirty.");
       }
       entity.relation(relationName as string).add(entity2);
-      entityObject.entity = entity;
+      entityObject.entity = entity as IEntity;
       return entityObject;
     }
   }
@@ -1385,7 +1386,7 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
       throw Error("Cannot remove from relation: elementToRemove.entity is dirty.");
     }
     entity.relation(relationName as string).remove(entity2);
-    entityObject.entity = entity;
+    entityObject.entity = entity as IEntity;
     return entityObject;
   }
 
@@ -1429,7 +1430,7 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
 
   public readonly getCurrentBufferSize = () => (this.dataBuffer ? Object.keys(this.dataBuffer).length : 0);
   public readonly bufferLoadStarted = () => this.bufferStarted != undefined;
-  public async getBufferQueryPromise(): Promise<Parse.Object<Parse.Attributes>[]> {
+  public async getBufferQueryPromise(): Promise<Parse.Object<any>[]> {
     if (this.bufferStarted) {
       // wait until this.bufferQuery$ is != undefined
       if (!this.bufferQuery$) {
@@ -1449,6 +1450,10 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
       return new Promise((resolve, reject) => {
         const interval = setInterval(() => {
           clearInterval(interval);
+          if(!this.bufferQuery$) {
+            console.warn("Buffer query is still undefined after 100ms, this should not happen.");
+            return resolve([]);
+          }
           resolve(this.bufferQuery$);
         }, 100);
       });
@@ -1489,9 +1494,9 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
       parseObject = entityObject as Parse.Object;
     }
     //fetching for consistency
-    parseObject = await parseObject.fetch();
+    parseObject = await parseObject.fetch({});
 
-    //checking if values should be added as ParseObjects or not
+    //checking if values should be added as Parse.Objects or not
     if (valuesToAdd.every(attribute => attribute instanceof Object && attribute.entity != undefined)) {
       valuesToAdd = valuesToAdd.map(x => x.entity) as Parse.Object[];
     } else if (valuesToAdd.some(x => x instanceof EntityObject || x instanceof EntityFile)) {
@@ -1508,7 +1513,7 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
       parseObject.addAll(arrayAttribute as string, valuesToAdd);
     }
 
-    return await parseObject.save().then((res) => {
+    return await parseObject.save().then((res: Parse.Object) => {
       return this.mapParseAttributesToEntityObject(res) as T;
     });
   }
@@ -1538,11 +1543,11 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
       parseObject = entityObject as Parse.Object;
     }
     //fetching for consistency
-    parseObject = await parseObject.fetch();
+    parseObject = await parseObject.fetch({});
 
     let valuesToAdd = values as any[];
 
-    //checking if values should be added as ParseObjects or not
+    //checking if values should be added as Parse.Objects or not
     if (valuesToAdd.every(attribute => attribute instanceof Object && attribute.entity != undefined)) {
       valuesToAdd = valuesToAdd.map(x => x.entity) as Parse.Object[];
     } else if (valuesToAdd.some(x => x instanceof EntityObject || x instanceof EntityFile)) {
@@ -1581,7 +1586,7 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
       return Promise.resolve([]);
     }
     const object = await new Parse.Query(this.classname).get(objectId);
-    const users = await sc_role.getUsers().query().notEqualTo("disabled", true).select("objectId").find();
+    const users = await sc_role.getUsers().query().notEqualTo("disabled", true).select("objectId").find() as Parse.User[];
     const allowedUsers: any[] = [];
     const allowedRoles: any[] = [];
     const procedureACL = object.getACL();
@@ -1607,8 +1612,10 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
       for (let superRole of superRoles) {
         users.push(...await recursiveFetchSuperRolesFunction(superRole));
       }
-      if (role.getName().startsWith('SC')) {
-        users.push(...await role.getUsers().query().notEqualTo("disabled", true).find());
+      if (role && this.isSCRole(role)) {
+        if (role.getUsers) {
+          users.push(...await role.getUsers().query().notEqualTo("disabled", true).find());
+        }
       }
       return users.sort((a, b) => a.getUsername()!.localeCompare(b.getUsername()!));
     }
@@ -1631,6 +1638,11 @@ export abstract class ParseDataService<T extends EntityObject> implements DataIn
     }
 
     return allowedUsers.concat(usersByRoles).map(user => this.mapParseUserToUser(user)).sort((a, b) => a.username!.localeCompare(b.username!));
+  }
+
+  private isSCRole(role: Parse.Role): boolean {
+    const roleName = role.getName();
+    return roleName !== null && roleName.startsWith('SC');
   }
 
   public async concatenateRelationsGets(entityObjects: T[], relationName: keyof T): Promise<any[]> {
