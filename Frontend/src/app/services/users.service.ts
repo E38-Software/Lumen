@@ -5,19 +5,9 @@ import Parse from "parse";
 import { ParseRoleManger } from "./roles.service";
 import { ParseFileService } from "./files.service";
 import { IEntity } from "../models/DataEntities/entity.interface"; 
-import { Customer } from "../models/customers.model";
+import { User } from "../models/DataEntities/user.model";
+import { Customer } from "../models/customer.model";
 
-
-export class User extends Parse.User {
-    username?: string | null;
-    email?: string | null;
-    password?: string | null;
-    role?: string | null;
-    entity?: IEntity | null;
-    profilePicture?: EntityFile;
-    personalSettings?: { [key: string]: string };
-    disabled?: boolean;
-}
 
 export interface UserService {
     signup(username: string, password: string, email: string, role: string[]): Promise<User>;
@@ -44,6 +34,7 @@ export class ParseUserService implements UserService {
         mappedUser.entity = user as IEntity;
         (mappedUser as any).id = user.id;
         mappedUser.profilePicture = user.get("profilePicture");
+        mappedUser.personalSettings = user.get("personalSettings") || {};
         return mappedUser;
     }
 

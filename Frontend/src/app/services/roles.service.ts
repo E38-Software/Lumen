@@ -2,10 +2,10 @@ import { Injectable } from "@angular/core";
 import { EntityObject } from "../models/DataEntities/entityObjects.model";
 import { ParseDataService } from "./data.service";
 import Parse from "parse";
-import { Customer } from "../models/customers.model";
 import { User } from "../models/DataEntities/user.model";
 import { Role } from "../models/role.model";
 import { Classnames } from "../common/classnames.model";
+import { Customer } from "../models/customer.model";
 
 @Injectable({
     providedIn: 'root'

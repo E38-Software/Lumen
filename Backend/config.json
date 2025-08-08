@@ -1,5 +1,5 @@
 {
-    "appId": "codebase",
+    "appId": "Lumen",
     "javascriptKey": "javascriptKey",
     "restAPIKey": "restAPIKey",
     "clientKey": "clientKey",
@@ -11,13 +11,13 @@
         ]
     },
     "liveQueryServerOptions": {
-        "appId": "codebase",
+        "appId": "Lumen",
         "masterKey": "master_key",
         "serverURL": "http://localhost:1337/parse"
     },
     "startLiveQueryServer": true,
-    "databaseURI": "mongodb://root:MongoloideDelCazzo@mongoDev:27017/codebase-test?authSource=admin",
-    "cloud": "/root/ParseTypescriptSDK/Backend/cloud/main.js",
+    "databaseURI": "mongodb://root:MongoloideDelCazzo@mongoDev:27017/lumen?authSource=admin",
+    "cloud": "/root/Lumen/Backend/cloud/main.js",
     "cacheMaxSize": 10000,
     "defaultLimit": 60000,
     "objectIdSize": 15,
