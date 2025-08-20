@@ -42,16 +42,23 @@ $gold-bg: rgb(215, 175, 73);
 
 // Vertical brand text (rotated svg)
 .aside-vertical-brand { display:flex; align-items:center; justify-content:center; height:130px; 
-  img { transform: rotate(-90deg); height:34px; width:auto; }
+  // Allow the SVG wordmark to scale: control via width not height so aspect ratio is preserved.
+  img.lumen-wordmark { transform: rotate(-90deg); width: 140px; height:auto; max-width:none; }
+}
+
+// Utility: enlarge wordmark on really tall screens so it doesn't look too small
+@media (min-height: 900px) {
+  .aside-vertical-brand { height:160px; }
+  .aside-vertical-brand img.lumen-wordmark { width: 170px; }
 }
 
 // Icon buttons cluster
-.aside-icon-cluster { display:flex; flex-direction:column; align-items:center; gap:36px; margin-top:4px;
-  a.aside-icon-btn { width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center;
-    background: rgba(255,255,255,0.28); color:#000; text-decoration:none; transition: background .25s ease, transform .25s ease;
-    i { font-size:26px; line-height:1; color:#000 !important; }
-    &:hover { background: rgba(255,255,255,0.42); transform: translateY(-2px); }
-    &.active { background: rgba(255,255,255,0.55); }
+.aside-icon-cluster { display:flex; flex-direction:column; align-items:center; gap:18px; margin-top:4px; // reduced gap
+  a.aside-icon-btn { width:46px; height:46px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    background: transparent; color:#000; text-decoration:none; transition: background .25s ease, transform .25s ease;
+    i { font-size:24px; line-height:1; color:#000 !important; }
+    &:hover { background: rgba(255,255,255,0.22); transform: translateY(-2px); }
+    &.active { background: rgba(255,255,255,0.45); } // no border / glow
   }
 }
 

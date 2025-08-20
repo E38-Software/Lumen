@@ -6,18 +6,18 @@
       </a>
     </div>
     <div class="aside-vertical-brand" aria-label="Lumen brand vertical">
-      <img alt="Lumen vertical" src="./assets/media/logos/Lumen_solo_scritta.svg" />
+  <img class="lumen-wordmark" alt="Lumen vertical" src="./assets/media/logos/Lumen_solo_scritta.svg" />
     </div>
   </div>
 
   <div class="aside-icon-cluster">
-    <a routerLink="/dashboard" class="aside-icon-btn" ngbTooltip="Dashboard">
+  <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="aside-icon-btn" ngbTooltip="Dashboard" placement="right">
       <i class="ki-solid ki-element-11 fs-2"></i>
     </a>
-    <a routerLink="/clienti" class="aside-icon-btn" ngbTooltip="Clienti">
+  <a routerLink="/clienti" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="aside-icon-btn" ngbTooltip="Clienti" placement="right">
       <i class="ki-solid ki-profile-circle fs-2"></i>
     </a>
-    <a routerLink="/video" class="aside-icon-btn" ngbTooltip="Video">
+  <a routerLink="/video" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="aside-icon-btn" ngbTooltip="Video" placement="right">
       <i class="ki-solid ki-youtube fs-2"></i>
     </a>
   </div>
