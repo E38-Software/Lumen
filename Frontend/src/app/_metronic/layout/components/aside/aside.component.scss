@@ -1,103 +1,78 @@
-// Custom Lumen gold color theme
-// Global aside styling to ensure entire sidebar is gold
-.aside, #kt_aside {
-  background-color: rgb(215, 175, 73) !important;
-}
+// Mini aside custom layout preserving existing gold palette
+@use 'sass:math';
+
+$aside-width: 95px; // updated per user request
+$gold-bg: rgb(215, 175, 73);
 
 :host {
-  // Main aside container
-  & {
-    background-color: rgb(215, 175, 73) !important;
-  }
-  
-  .aside-logo {
-    background-color: rgb(215, 175, 73) !important;
-    
-    // Main logo keeps original black color (no filter applied)
-    
-    // Style for company name text logo (vertical orientation)
-    .lumen-vertical-text {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 120px; // Give more space for the rotated text
-      width: 100%;
-      margin-top: 20px !important;
-      
-      img {
-        // Keep original black color - no filter applied
-        height: 35px !important; // Larger size as requested
-        width: auto;
-        white-space: nowrap;
-      }
-    }
-  }
-  
-  .aside-nav {
-    background-color: rgb(215, 175, 73) !important;
-    
-    .menu {
-      .menu-item {
-        .menu-link {
-          color: rgba(255, 255, 255, 0.8) !important;
-          
-          &:hover, &.active {
-            background-color: rgba(255, 255, 255, 0.1) !important;
-            color: white !important;
-          }
-          
-          .menu-icon {
-            .svg-icon {
-              color: rgba(255, 255, 255, 0.8) !important;
-            }
-          }
-        }
-        
-        &.here.show > .menu-link,
-        &.show > .menu-link {
-          background-color: rgba(255, 255, 255, 0.15) !important;
-          color: white !important;
-          
-          .svg-icon {
-            color: white !important;
-          }
-        }
-      }
-      
-      .menu-sub {
-        background-color: rgba(0, 0, 0, 0.1) !important;
-        
-        .menu-item {
-          .menu-link {
-            color: rgba(255, 255, 255, 0.7) !important;
-            
-            &:hover, &.active {
-              background-color: rgba(255, 255, 255, 0.1) !important;
-              color: white !important;
-            }
-          }
-        }
-      }
-    }
-  }
-  
-  .aside-footer {
-    background-color: rgb(215, 175, 73) !important;
-    padding: 20px 0;
-    
-    img {
-      // Keep original colors for Lexi logo but add contrast enhancement
-      opacity: 1;
-      transition: all 0.3s ease;
-      background-color: rgba(255, 255, 255, 0.1); // Light background for better contrast
-      border-radius: 8px;
-      padding: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); // Subtle shadow for depth
-      
-      &:hover {
-        background-color: rgba(255, 255, 255, 0.2);
-        transform: scale(1.05); // Slight scale on hover
-      }
-    }
+  background-color: $gold-bg !important;
+  display: flex;
+  flex-direction: column;
+  width: $aside-width;
+  min-width: $aside-width;
+  max-width: $aside-width;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.lumen-mini-aside {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 12px 0 14px; // top ~12, bottom ~14 like screenshot
+  background-color: $gold-bg !important;
+  align-items: center;
+}
+
+// Top logo area (fingerprint position equivalent)
+// Brand block groups logo + vertical word to allow tighter spacing
+.aside-brand-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px; // tight distance between logo and vertical text
+  margin-bottom: 20px; // separation from icon cluster
+}
+
+.aside-top-logo { width:100%; display:flex; justify-content:center; 
+  img { height:44px; width:auto; display:block; }
+}
+
+// Vertical brand text (rotated svg)
+.aside-vertical-brand { display:flex; align-items:center; justify-content:center; height:130px; 
+  img { transform: rotate(-90deg); height:34px; width:auto; }
+}
+
+// Icon buttons cluster
+.aside-icon-cluster { display:flex; flex-direction:column; align-items:center; gap:36px; margin-top:4px;
+  a.aside-icon-btn { width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    background: rgba(255,255,255,0.28); color:#000; text-decoration:none; transition: background .25s ease, transform .25s ease;
+    i { font-size:26px; line-height:1; color:#000 !important; }
+    &:hover { background: rgba(255,255,255,0.42); transform: translateY(-2px); }
+    &.active { background: rgba(255,255,255,0.55); }
   }
 }
+
+// (Toggle removed per user request)
+
+.flex-spacer { flex: 1 1 auto; }
+
+// Footer area
+.aside-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  .aside-version {
+    font-size: 10px;
+    line-height: 1.2;
+    margin-bottom: 10px; // version->logo spacing
+    color: #000;
+  }
+  .aside-lexi-logo { img { height:38px; width:auto; display:block; } }
+}
+
+// Ensure no leakage from original menu styles
+::ng-deep app-aside-menu { display: none !important; }

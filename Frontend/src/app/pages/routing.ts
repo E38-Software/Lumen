@@ -39,6 +39,16 @@ const Routing: Routes = [
       import('../modules/apps/chat/chat.module').then((m) => m.ChatModule),
   },
   {
+    path: 'clienti',
+    loadChildren: () =>
+      import('./clienti/clienti.module').then((m) => m.ClientiModule),
+  },
+  {
+    path: 'video',
+    loadChildren: () =>
+      import('./video/video.module').then((m) => m.VideoModule),
+  },
+  {
     path: '',
     redirectTo: '/dashboard',
     pathMatch: 'full',

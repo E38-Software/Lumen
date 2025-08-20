@@ -1,67 +1,33 @@
-<!-- begin::Brand -->
-<div class="aside-logo d-none d-lg-flex flex-column align-items-center flex-column-auto py-8" id="kt_aside_logo">
-  <!-- begin::Logo -->
-  <a routerLink="/dashboard">
-    <img
-      alt="Logo"
-      class="h-55px"
-      src="./assets/media/logos/Logo_Lumen.svg"
-    />
-  </a>
-  
-  <!-- begin::Company Name -->
-  <div class="mt-3 lumen-vertical-text">
-    <img
-      alt="Lumen"
-      class="h-25px"
-      src="./assets/media/logos/Lumen_solo_scritta.svg"
-      style="transform: rotate(-90deg); transform-origin: center;"
-    />
-  </div>
-  <!-- end::Company Name -->
-  
-  <!-- end::Logo -->
-
-  <!-- begin::Aside toggle -->
-  <ng-container *ngIf="asideMinimize">
-    <div
-      id="kt_aside_toggle"
-      class="btn btn-icon w-auto px-0 btn-active-color-primary aside-toggle"
-      data-kt-toggle="true"
-      data-kt-toggle-state="active"
-      data-kt-toggle-target="body"
-      data-kt-toggle-name="aside-minimize"
-    >
+<div class="lumen-mini-aside" #ktAsideScroll>
+  <div class="aside-brand-block">
+    <div class="aside-top-logo">
+      <a routerLink="/dashboard">
+        <img alt="Logo Lumen" src="./assets/media/logos/Logo_Lumen.svg" />
+      </a>
     </div>
-  </ng-container>
-  <!-- end::Aside toggler -->
-</div>
-<!-- end::Brand  -->
-
-<!-- begin::Aside menu -->
-<div
-  #ktAsideScroll
-  id="kt_aside_nav"
-  class="aside-nav d-flex flex-column align-lg-center flex-column-fluid w-100 pt-5 pt-lg-0"
->
-  <app-aside-menu
-    id="kt_aside_menu"
-    data-kt-menu="true"
-    class="menu menu-column menu-title-gray-600 menu-state-primary menu-state-icon-primary menu-state-bullet-primary menu-arrow-gray-500 fw-bold fs-6">>
-  </app-aside-menu>
-</div>
-<!-- end::Aside menu -->
-
-<!-- begin::Footer -->
-<div class="aside-footer d-flex flex-column align-items-center flex-column-auto" id="kt_aside_footer">
-  <!-- begin::Lexi Logo -->
-  <div class="mb-3">
-    <img
-      alt="Lexi"
-      class="h-40px"
-      src="./assets/media/logos/Logo_Lexi.png"
-    />
+    <div class="aside-vertical-brand" aria-label="Lumen brand vertical">
+      <img alt="Lumen vertical" src="./assets/media/logos/Lumen_solo_scritta.svg" />
+    </div>
   </div>
-  <!-- end::Lexi Logo -->
+
+  <div class="aside-icon-cluster">
+    <a routerLink="/dashboard" class="aside-icon-btn" ngbTooltip="Dashboard">
+      <i class="ki-solid ki-element-11 fs-2"></i>
+    </a>
+    <a routerLink="/clienti" class="aside-icon-btn" ngbTooltip="Clienti">
+      <i class="ki-solid ki-profile-circle fs-2"></i>
+    </a>
+    <a routerLink="/video" class="aside-icon-btn" ngbTooltip="Video">
+      <i class="ki-solid ki-youtube fs-2"></i>
+    </a>
+  </div>
+
+  <div class="flex-spacer"></div>
+
+  <div class="aside-footer" id="kt_aside_footer">
+    <div class="aside-version">Versione: 0.0.2</div>
+    <div class="aside-lexi-logo">
+      <img alt="Lexi" src="./assets/media/logos/Logo_Lexi.png" />
+    </div>
+  </div>
 </div>
-<!-- end::Footer -->
