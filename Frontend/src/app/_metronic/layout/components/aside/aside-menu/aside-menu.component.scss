@@ -1,0 +1,49 @@
+// Aside menu styling for Lumen gold theme
+:host {
+  .menu {
+    &.menu-column {
+      .menu-item {
+        .menu-link {
+          color: rgba(255, 255, 255, 0.8) !important;
+          
+          &:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            color: white !important;
+          }
+          
+          &.active {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            color: white !important;
+          }
+          
+          .menu-icon .svg-icon {
+            color: rgba(255, 255, 255, 0.8) !important;
+          }
+        }
+        
+        &.here.show > .menu-link,
+        &.show > .menu-link {
+          background-color: rgba(255, 255, 255, 0.15) !important;
+          color: white !important;
+          
+          .svg-icon {
+            color: white !important;
+          }
+        }
+        
+        .menu-sub {
+          background-color: rgba(0, 0, 0, 0.1) !important;
+          
+          .menu-item .menu-link {
+            color: rgba(255, 255, 255, 0.7) !important;
+            
+            &:hover, &.active {
+              background-color: rgba(255, 255, 255, 0.1) !important;
+              color: white !important;
+            }
+          }
+        }
+      }
+    }
+  }
+}

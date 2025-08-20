@@ -1,0 +1,17 @@
+/* Layout Component Styles */
+.app-root {
+  background-color: var(--bs-app-bg-color);
+}
+
+.app-header {
+  background-color: var(--bs-app-header-bg-color, #fff);
+  border-bottom: 1px solid var(--bs-app-border-color, #e4e6ea);
+}
+
+.app-wrapper {
+  min-height: 100vh;
+}
+
+.app-content {
+  padding: 2rem 0;
+}

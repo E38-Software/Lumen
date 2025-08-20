@@ -1,0 +1,103 @@
+// Custom Lumen gold color theme
+// Global aside styling to ensure entire sidebar is gold
+.aside, #kt_aside {
+  background-color: rgb(215, 175, 73) !important;
+}
+
+:host {
+  // Main aside container
+  & {
+    background-color: rgb(215, 175, 73) !important;
+  }
+  
+  .aside-logo {
+    background-color: rgb(215, 175, 73) !important;
+    
+    // Main logo keeps original black color (no filter applied)
+    
+    // Style for company name text logo (vertical orientation)
+    .lumen-vertical-text {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 120px; // Give more space for the rotated text
+      width: 100%;
+      margin-top: 20px !important;
+      
+      img {
+        // Keep original black color - no filter applied
+        height: 35px !important; // Larger size as requested
+        width: auto;
+        white-space: nowrap;
+      }
+    }
+  }
+  
+  .aside-nav {
+    background-color: rgb(215, 175, 73) !important;
+    
+    .menu {
+      .menu-item {
+        .menu-link {
+          color: rgba(255, 255, 255, 0.8) !important;
+          
+          &:hover, &.active {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            color: white !important;
+          }
+          
+          .menu-icon {
+            .svg-icon {
+              color: rgba(255, 255, 255, 0.8) !important;
+            }
+          }
+        }
+        
+        &.here.show > .menu-link,
+        &.show > .menu-link {
+          background-color: rgba(255, 255, 255, 0.15) !important;
+          color: white !important;
+          
+          .svg-icon {
+            color: white !important;
+          }
+        }
+      }
+      
+      .menu-sub {
+        background-color: rgba(0, 0, 0, 0.1) !important;
+        
+        .menu-item {
+          .menu-link {
+            color: rgba(255, 255, 255, 0.7) !important;
+            
+            &:hover, &.active {
+              background-color: rgba(255, 255, 255, 0.1) !important;
+              color: white !important;
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  .aside-footer {
+    background-color: rgb(215, 175, 73) !important;
+    padding: 20px 0;
+    
+    img {
+      // Keep original colors for Lexi logo but add contrast enhancement
+      opacity: 1;
+      transition: all 0.3s ease;
+      background-color: rgba(255, 255, 255, 0.1); // Light background for better contrast
+      border-radius: 8px;
+      padding: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); // Subtle shadow for depth
+      
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+        transform: scale(1.05); // Slight scale on hover
+      }
+    }
+  }
+}
